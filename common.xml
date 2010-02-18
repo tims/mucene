@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="common" basedir=".">
+
+  <property file="build.properties" />
+
+  <property name="lib.dir" location="lib" />
+  <property name="bin.dir" location="bin" />
+  <property name="src.dir" location="src" />
+  <property name="java.src.dir" location="${src.dir}/java" />
+  <property name="thrift.src.dir" location="${src.dir}/thrift" />
+  <property name="generated.src.dir" location="${src.dir}/generated" />
+  <property name="web.src.dir" location="${src.dir}/web" />
+  <property name="conf.dir" location="${src.dir}/conf" />
+  <property name="src.conf.dir" location="${src.dir}/conf" />
+
+  <property name="test.dir" location="test" />
+  <property name="test.conf.dir" location="${test.dir}/conf" />
+  <property name="test.data.dir" location="${test.dir}/data" />
+  <property name="test.java.dir" location="${test.dir}/java" />
+
+  <property name="build.dir" location="build" />
+  <property name="classes.dir" location="${build.dir}/classes" />
+  <property name="test.classes.dir" location="${build.dir}/classes-test" />
+  <property name="generated.classes.dir" location="${build.dir}/classes-generated" />
+  <property name="javadoc.dir" location="${build.dir}/javadoc" />
+  <property name="javadoc.includes" value="fm/last/**/*.java" />
+  <property name="dist.dir" location="${build.dir}/dist" />
+  <property name="junit.report.dir" location="${build.dir}/junit" />
+  <property name="checkstyle.report.dir" value="${build.dir}/checkstyle" />
+  <property name="findbugs.report.dir" value="${build.dir}/findbugs" />
+
+  <property name="cobertura.dir" value="${build.dir}/cobertura" />
+  <property name="cobertura.report.dir" value="${cobertura.dir}/report" />
+  <property name="cobertura.classes.dir" value="${cobertura.dir}/classes" />
+  <property name="cobertura.datafile" value="${cobertura.dir}/cobertura.ser" />
+
+  <property name="ear.file" value="${ant.project.name}.ear" />
+  <property name="jar.file" value="${ant.project.name}.jar" />
+  <property name="war.file" value="${ant.project.name}.war" />
+  <property name="tgz.file" value="${ant.project.name}.tgz" />
+
+  <!-- override the following if you install ivy/ant elsewhere or your svn auth details are different -->
+  <property name="ivysettings.dir" location="${ant.home}/lib" />
+  <import file="${ivysettings.dir}/ivy-common-targets.xml" />
+  <property name="svn.user.name" value="${user.name}" />
+  <property name="ssh.keyfile" value="${user.home}/.ssh/id_rsa" />
+
+  <!-- the following you almost certainly want to override yourself -->
+  <property name="deploy.dir" location="/usr/local/java/tomcat/webapps" />
+  <property name="ear.deploy.dir" value="${deploy.dir}" />
+  <property name="jar.deploy.dir" value="${deploy.dir}" />
+  <property name="war.deploy.dir" value="${deploy.dir}" />
+  <property name="findbugs.home.dir" location="/usr/local/findbugs" />
+
+  <!-- override this fileset to include extra files in the jar that gets built by build-jar -->
+  <fileset dir="." includes="${jar.file.includes}" id="jar-fileset" />
+
+  <!-- by default we include all jars under lib in this, override to narrow down -->
+  <fileset dir="${lib.dir}" id="lib.fileset">
+    <include name="*.jar" />
+  </fileset>
+
+  <!-- classpath used for compiling -->
+  <path id="compile-classpath">
+    <fileset dir="${lib.dir}">
+      <include name="*.jar" />
+      <exclude name="checkstyle*.jar" />
+    </fileset>
+    <pathelement location="${generated.classes.dir}" />
+  </path>
+
+  <!-- classpath used for compiling test classes, override this if you need extra entries to compile your tests -->
+  <path id="test-compile-classpath">
+    <path refid="compile-classpath" />
+    <pathelement location="${classes.dir}" />
+  </path>
+
+  <!-- base classpath used when running tests -->
+  <path id="test-classpath">
+    <pathelement location="${test.conf.dir}" />
+    <!--  put instrumented classes higher up in classpath so they will be used if available -->
+    <pathelement location="${cobertura.classes.dir}" />
+    <pathelement location="${classes.dir}" />
+    <path refid="compile-classpath" />
+    <pathelement location="${test.classes.dir}" />
+  </path>
+
+  <!-- extra classpath that can be used when running tests, override this if you need extra entries to run your tests -->
+  <path id="additional-test-classpath" />
+
+  <!-- classpath that can be used to run compiled classes -->
+  <path id="run-classpath">
+    <path refid="compile-classpath" />
+    <pathelement path="${conf.dir}" />
+    <pathelement location="${classes.dir}" />
+    <pathelement location="${generated.classes.dir}" />
+  </path>
+
+  <taskdef resource="net/sf/antcontrib/antlib.xml">
+    <classpath location="${lib.dir}/ant-contrib.jar" />
+  </taskdef>
+
+  <target name="init" description="Initialise everything needed by other targets">
+    <mkdir dir="${build.dir}" />
+    <mkdir dir="${generated.classes.dir}" />
+  </target>
+
+  <target name="clean" description="Remove files and folders from previous builds">
+    <delete dir="${build.dir}" />
+    <delete dir="${generated.src.dir}" />
+  </target>
+
+  <!-- Override this task if you wish to generate some source (thrift, jaxb, etc.) -->
+  <target name="generate-sources" depends="init, retrieve">
+    <mkdir dir="${generated.src.dir}"/>
+  </target>
+  
+  <target name="compile" depends="compile-source, compile-test" />
+
+  <target name="compile-source" depends="init, retrieve" description="Compile the Java source code">
+    <mkdir dir="${classes.dir}" />
+    <javac srcdir="${java.src.dir}" destdir="${classes.dir}" debug="true" fork="true">
+      <classpath refid="compile-classpath" />
+    </javac>
+    <echo message="Sources compiled" />
+  </target>
+
+  <!-- Optional compilation step -->
+  <target name="compile-generated" depends="init,retrieve,generate-sources" description="Compile the generated Java source code">
+    <javac srcdir="${generated.src.dir}" destdir="${generated.classes.dir}" debug="true" fork="true">
+      <classpath refid="compile-classpath" />
+    </javac>
+    <echo message="Generated Sources compiled" />
+  </target>
+      
+  <target name="compile-test" depends="compile-source" description="Compile the Java test source code">
+    <mkdir dir="${test.classes.dir}" />
+    <javac srcdir="${test.java.dir}" destdir="${test.classes.dir}" debug="true">
+      <classpath>
+        <path refid="test-compile-classpath" />
+      </classpath>
+    </javac>
+    <echo message="Test Sources compiled" />
+  </target>
+
+  <target name="test" depends="compile" description="Run the unit tests">
+    <delete dir="${junit.report.dir}" />
+    <mkdir dir="${junit.report.dir}" />
+
+    <property name="junit.includes" value="**/*Test.java" />
+    <property name="junit.excludes" value="nothing.by.default" />
+    <property name="junit.fork" value="true" />
+    <property name="junit.forkmode" value="perTest" />
+
+    <junit printsummary="yes" failureproperty="testfailed" showoutput="true" fork="${junit.fork}" forkmode="${junit.forkmode}">
+      <sysproperty key="net.sourceforge.cobertura.datafile" file="${cobertura.datafile}" />
+      <classpath refid="additional-test-classpath" />
+      <classpath refid="test-classpath" />
+      <classpath location="${lib.dir}/cobertura.jar" />
+
+      <formatter type="xml" usefile="true" />
+
+      <batchtest todir="${junit.report.dir}">
+        <fileset dir="${test.java.dir}" includes="${junit.includes}" excludes="${junit.excludes}" />
+      </batchtest>
+
+    </junit>
+
+    <junitreport todir="${junit.report.dir}">
+      <fileset dir="${junit.report.dir}">
+        <include name="TEST-*.xml" />
+      </fileset>
+      <report format="noframes" todir="${junit.report.dir}" />
+    </junitreport>
+
+    <fail if="testfailed" message="Some test(s) failed. See '${junit.report.dir}' for details." />
+  </target>
+
+  <target name="javadoc" depends="retrieve">
+    <tstamp>
+      <format property="YEAR" pattern="yyyy" />
+    </tstamp>
+    <javadoc destdir="${javadoc.dir}" author="true" version="true" use="true" windowtitle="${ant.project.name} API" classpathref="compile-classpath">
+      <fileset dir="${java.src.dir}" defaultexcludes="yes">
+        <include name="${javadoc.includes}" />
+      </fileset>
+      <bottom>
+        <![CDATA[<i>Copyright &#169; ${YEAR} Last.fm. All Rights Reserved.</i>]]>
+      </bottom>
+  </javadoc>
+</target>
+
+<target name="thrift-generate" description="Generates all java source code defined in various thrift files">
+  <mkdir dir="${generated.src.dir}" />
+  <foreach target="thrift-generate-single" param="thrift.filename" inheritall="true" inheritrefs="true">
+    <path>
+      <fileset dir="${thrift.src.dir}">
+        <include name="**/*.thrift" />
+      </fileset>
+    </path>
+  </foreach>
+  <move todir="${generated.src.dir}">
+    <fileset dir="${generated.src.dir}/gen-javabean" />
+  </move>
+  <delete dir="${generated.src.dir}/gen-javabean" />
+</target>
+
+<target name="thrift-generate-single" description="Internal target for generating java source code from a passed thrift file">
+  <exec executable="thrift" failonerror="true">
+    <arg value="--gen" />
+    <arg value="java:beans,hashcode" />
+    <arg value="-o" />
+    <arg value="${generated.src.dir}" />
+    <arg value="${thrift.filename}" />
+  </exec>
+  <echo message="Generated Java for Thrift file: ${thrift.filename}" />
+</target>
+
+<!--  we assume jar is the default build target, override this if not the case -->
+<target name="build" depends="build-jar" description="Builds this project" />
+
+<target name="build-ear" depends="compile-source" description="Builds this project's ear file(s)" />
+
+<target name="build-jar" depends="compile-source, buildnumber" description="Builds this project's jar file(s)">
+
+  <!-- these can be overridden in child build files if you need to customise what goes into your jar -->
+  <property name="jar.classes.include" value="**/*" />
+  <property name="jar.classes.exclude" value="nothing.by.default" />
+  <property name="dist.jar.filename" value="${jar.file}" />
+
+  <mkdir dir="${dist.dir}" />
+  <tstamp>
+    <format property="BUILD-DATETIME" pattern="yyyy-MM-dd HH:mm:ss" />
+  </tstamp>
+  <jar destfile="${dist.dir}/${dist.jar.filename}" update="true">
+    <fileset dir="${classes.dir}" excludes="${jar.classes.exclude}" includes="${jar.classes.include}" />
+    <fileset dir="${generated.classes.dir}" excludes="${jar.classes.exclude}" includes="${jar.classes.include}" />
+    <!-- set this in child files to add extra stuff to jar -->
+    <fileset refid="jar-fileset" />
+    <manifest>
+      <attribute name="Build-Version" value="${version}" />
+      <attribute name="Build-DateTime" value="${BUILD-DATETIME}" />
+    </manifest>
+  </jar>
+  <echo message="Build-Version set to ${version}" />
+  <echo message="Build-DateTime set to ${BUILD-DATETIME}" />
+</target>
+
+<target name="build-war" depends="compile-source" description="Builds this project's war file(s)" />
+
+<target name="build-deb" depends="build" description="Builds this project's deb file(s)">
+
+  <!-- default properties for .deb filesets, overwrite before calling this target as neccessary -->
+  <property name="deb.package.name" value="${ant.project.name}" />
+  <property name="deb.bin.includes" value="**/*" />
+  <property name="deb.lib.includes" value="**/*" />
+  <property name="deb.lib.excludes" value="" />
+  <property name="deb.conf.includes" value="**/*" />
+  <property name="deb.conf.excludes" value="" />
+  <property name="deb.conf.dir" value="${src.conf.dir}" />
+  <property name="deb.dependencies" value="sun-java6-jdk, jsvc" />
+  <property name="deb.description" value="Empty description" />
+  <property name="deb.synopsis" value="Empty " />
+
+  <taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpath="${lib.dir}/ant-deb.jar" />
+
+  <mkdir dir="${dist.dir}" />
+
+  <!-- hack to create empty var/log and /var/lib subdirectories -->
+  <mkdir dir="${build.dir}/${deb.package.name}" />
+
+  <deb todir="${dist.dir}" debFilenameProperty="deb.output.filename" package="${deb.package.name}" section="devel" depends="${deb.dependencies}" preinst="${deb.preinst}" postinst="${deb.postinst}" prerm="${deb.prerm}" postrm="${deb.postrm}">
+
+    <description synopsis="${deb.synopsis}"> ${deb.description} </description>
+
+    <version upstream="${version}" />
+    <maintainer email="The Last fm Data team" name="datateam@last.fm" />
+
+    <!-- copy any jar files from dist into the .deb (i.e. project's own jar file) -->
+    <tarfileset dir="${dist.dir}" prefix="usr/local/${deb.package.name}/lib"  includes="*.jar" />
+    <tarfileset dir="${lib.dir}" prefix="usr/local/${deb.package.name}/lib" includes="${deb.lib.includes}" excludes="${deb.lib.excludes}" />
+
+    <!-- this might copy files twice, but needed for some non daemon projects -->
+    <tarfileset dir="${bin.dir}" prefix="usr/local/${deb.package.name}/bin" filemode="755" includes="${deb.bin.includes}" />
+    <tarfileset file="${bin.dir}/${deb.package.name}" prefix="etc/init.d" filemode="755" />
+
+    <!-- would be better if we knew the user this will be run as, hmm -->
+    <tarfileset dir="${build.dir}" prefix="var/log" dirmode="777">
+      <include name="${deb.package.name}" />
+    </tarfileset>
+
+    <tarfileset dir="${build.dir}" prefix="var/lib" dirmode="777">
+      <include name="${deb.package.name}" />
+    </tarfileset>
+
+    <tarfileset dir="${build.dir}" prefix="var/run" dirmode="777">
+      <include name="${deb.package.name}" />
+    </tarfileset>
+
+    <conffiles dir="${deb.conf.dir}" prefix="etc/${deb.package.name}" filemode="644" includes="${deb.conf.includes}" excludes="${deb.conf.excludes}"/>
+  </deb>
+
+  <delete dir="${build.dir}/${deb.package.name}" quiet="true" />
+</target>
+
+<target name="dist" depends="build, javadoc" />
+
+<!--by default deploy deploys war -->
+<target name="deploy" depends="deploy-war" />
+
+<target name="deploy-ear" depends="build-ear" description="Deploy ear to deployment location">
+  <available property="deploy.dir.exists" file="${ear.deploy.dir}" type="dir" />
+  <fail unless="deploy.dir.exists" message="${ear.deploy.dir} not found" />
+  <copy todir="${ear.deploy.dir}" file="${dist.dir}/${ear.file}" overwrite="true" verbose="true" />
+</target>
+
+<target name="deploy-jar" depends="build-jar" description="Deploy jar to deployment location">
+  <available property="deploy.dir.exists" file="${jar.deploy.dir}" type="dir" />
+  <fail unless="deploy.dir.exists" message="${jar.deploy.dir} not found" />
+  <copy todir="${jar.deploy.dir}" file="${dist.dir}/${jar.file}" overwrite="true" verbose="true" />
+</target>
+
+<target name="deploy-war" depends="build-war" description="Deploy war to deployment location">
+  <available property="deploy.dir.exists" file="${war.deploy.dir}" type="dir" />
+  <fail unless="deploy.dir.exists" message="${war.deploy.dir} not found" />
+  <copy todir="${war.deploy.dir}" file="${dist.dir}/${war.file}" overwrite="true" verbose="true" />
+</target>
+
+<target name="deploy-deb" depends="build-deb" description="Deploy deb to internal apt repo">
+  <exec executable="scp">
+    <arg value="${deb.output.filename}" />
+    <arg value="mirror@badger.last.fm:/var/www/lastfm/dists/etch/main/binary-amd64" />
+  </exec>
+  <exec executable="scp">
+    <arg value="${deb.output.filename}" />
+    <arg value="mirror@badger.last.fm:/var/www/lastfm/dists/etch/main/binary-i386" />
+  </exec>
+</target>
+
+<target name="checkstyle" depends="retrieve">
+
+  <taskdef resource="checkstyletask.properties">
+    <classpath>
+      <fileset dir="${lib.dir}">
+        <include name="antlr.jar" />
+        <include name="checkstyle*.jar" />
+        <include name="commons-beanutils*.jar" />
+        <include name="commons-logging*.jar" />
+        <include name="collections*.jar" />
+      </fileset>
+    </classpath>
+  </taskdef>
+
+  <mkdir dir="${checkstyle.report.dir}" />
+
+  <checkstyle config="${test.conf.dir}/checkstyle.xml" failOnViolation="false" classpathref="compile-classpath">
+    <fileset dir="${java.src.dir}" includes="**/*.java" excludes="${checkstyle.excludes}" />
+    <formatter type="xml" toFile="${checkstyle.report.dir}/checkstyle-errors.xml" />
+  </checkstyle>
+
+  <xslt style="${test.conf.dir}/checkstyle-noframes-sorted.xsl" in="${checkstyle.report.dir}/checkstyle-errors.xml" out="${checkstyle.report.dir}/checkstyle-errors.html" />
+</target>
+
+<target name="findbugs" depends="build">
+  <echo message="Running findbugs from ${findbugs.home.dir}" />
+  <taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpath="${findbugs.home.dir}/lib/findbugs-ant.jar" />
+
+  <property name="findbugs.report.htmlfile" value="${findbugs.report.dir}/findbugs-report.html" />
+  <property name="findbugs.report.xmlfile" value="${findbugs.report.dir}/findbugs-report.xml" />
+
+  <mkdir dir="${findbugs.report.dir}" />
+
+  <findbugs home="${findbugs.home.dir}" output="xml:withMessages" outputFile="${findbugs.report.xmlfile}" effort="max" jvmargs="-Xmx512M" excludeFilter="${test.conf.dir}/findbugsExclude.xml">
+    <auxClasspath>
+      <fileset dir="${lib.dir}">
+        <include name="**/*.jar" />
+      </fileset>
+    </auxClasspath>
+
+    <sourcePath path="${java.src.dir}" />
+    <class location="${classes.dir}" />
+  </findbugs>
+
+  <xslt style="${findbugs.home.dir}/src/xsl/default.xsl" in="${findbugs.report.xmlfile}" out="${findbugs.report.htmlfile}" />
+</target>
+
+<target name="cobertura-instrument" depends="compile-source">
+  <taskdef resource="tasks.properties">
+    <classpath>
+      <fileset dir="${lib.dir}">
+        <include name="*.jar" />
+      </fileset>
+    </classpath>
+  </taskdef>
+
+  <delete file="${cobertura.datafile}" />
+
+  <cobertura-instrument todir="${cobertura.classes.dir}" datafile="${cobertura.datafile}">
+    <ignore regex="org.apache.log4j.*" />
+
+    <fileset dir="${classes.dir}">
+      <include name="**/*.class" />
+      <exclude name="${cobertura.excludes}" />
+    </fileset>
+
+  </cobertura-instrument>
+</target>
+
+<target name="cobertura-report">
+  <cobertura-report format="html" destdir="${cobertura.report.dir}" srcdir="${java.src.dir}" datafile="${cobertura.datafile}" />
+  <cobertura-report format="xml" destdir="${cobertura.report.dir}" srcdir="${java.src.dir}" datafile="${cobertura.datafile}" />
+</target>
+
+<target name="cobertura" depends="cobertura-instrument, test, cobertura-report" />
+
+<target name="all" depends="javadoc, checkstyle, build, findbugs, cobertura" />
+
+</project>
