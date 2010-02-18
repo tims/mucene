@@ -1,0 +1,21 @@
+<ivy-module version="1.0">
+  <info organisation="lastfm" module="mysic"/>
+  
+  <publications>
+    <artifact name="mysic" ext="jar"/>
+  </publications>
+  
+	<dependencies>
+		<dependency org="apache" name="lucene" rev="2.4.1"/>
+		<dependency org="apache" name="log4j" rev="1.2.15"/>
+		<dependency org="apache" name="commons-io" rev="1.4"/>
+		<dependency org="apache" name="commons-daemon" rev="1.0.1"/>
+		<dependency org="googlecode" name="ant-deb" rev="0.0.1"/>
+		<dependency org="junit.org" name="junit" rev="4.8.1"/>
+		<dependency org="lastfm" name="javalib" rev="4.0.2"/>
+		<dependency org="sf.net" name="ant-contrib" rev="1.0b3"/>
+		<dependency org="sf.net" name="checkstyle" rev="5.0"/>
+		<dependency org="sf.net" name="cobertura" rev="1.9.3"/>
+	</dependencies>
+  
+</ivy-module>
