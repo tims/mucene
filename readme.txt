@@ -1,3 +1,5 @@
-Apologies to erikf, I stole his name for some messing around with lucene.
+Nothing to see here..
+
+Apologies to erikf, I stole your name while I mess around with lucene.
 
 
