@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project basedir="." default="build" name="mysic"> <!-- REPLACE NAME! -->
+<project basedir="." default="build" name="mucene"> <!-- REPLACE NAME! -->
   
   <!-- override properties in common.xml BEFORE importing it -->
   

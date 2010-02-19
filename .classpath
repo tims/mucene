@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/java"/>
+	<classpathentry kind="src" path="test/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/ant-contrib.jar"/>
+	<classpathentry kind="lib" path="lib/ant-deb.jar"/>
+	<classpathentry kind="lib" path="lib/antlr.jar"/>
+	<classpathentry kind="lib" path="lib/asm-tree.jar"/>
+	<classpathentry kind="lib" path="lib/asm.jar"/>
+	<classpathentry kind="lib" path="lib/checkstyle.jar"/>
+	<classpathentry kind="lib" path="lib/cobertura.jar"/>
+	<classpathentry kind="lib" path="lib/collections.jar"/>
+	<classpathentry kind="lib" path="lib/commons-beanutils-bean-collections.jar"/>
+	<classpathentry kind="lib" path="lib/commons-beanutils-core.jar"/>
+	<classpathentry kind="lib" path="lib/commons-beanutils.jar"/>
+	<classpathentry kind="lib" path="lib/commons-collections.jar"/>
+	<classpathentry kind="lib" path="lib/commons-daemon.jar"/>
+	<classpathentry kind="lib" path="lib/commons-io.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
+	<classpathentry kind="lib" path="lib/jakarta-oro.jar"/>
+	<classpathentry kind="lib" path="lib/javalib.jar"/>
+	<classpathentry kind="lib" path="lib/joda-time.jar"/>
+	<classpathentry kind="lib" path="lib/junit.jar"/>
+	<classpathentry kind="lib" path="lib/log4j.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-analyzers.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-core.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-highlighter.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-memory.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-similarity.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-snowball.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-spellchecker.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-surround.jar"/>
+	<classpathentry kind="output" path="build/eclipse-classes"/>
+</classpath>

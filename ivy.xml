@@ -1,8 +1,8 @@
 <ivy-module version="1.0">
-  <info organisation="lastfm" module="mysic"/>
+  <info organisation="lastfm" module="mucene"/>
   
   <publications>
-    <artifact name="mysic" ext="jar"/>
+    <artifact name="mucene" ext="jar"/>
   </publications>
   
 	<dependencies>
