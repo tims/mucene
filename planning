@@ -1,0 +1,68 @@
+servlet:
+	thread pool for handling incoming queries.
+	each query takes a SearchQuery identical to the searchproxy (import the search query classes?)
+	
+interface:
+	warm user index
+	query user index
+	
+warming:
+	load a searcher thread into an in memory cache, the index could be a ram directory?
+
+searching:
+	get searcher thread from searcher manager. this will transparently get it out of cache or block till it's loaded.
+	return searcher.query(q);
+
+
+
+STEP 1.
+Initially lets have no caching layer.
+when query for a user index arrives will pull it from the manager. The manager loads it from an index repository and wraps a searcher around it.
+
+STEP 2.
+do caching on the searcher.
+
+STEP 3.
+When the index is pulled from the repository load it into a ram directory.
+
+SearcherManager fetches indexes from index manager and wraps them in a searcher, we may try internal caching of these eventually. These should know how to close themselves, which in turn will close the index. This matters most when the index is directly on disk.
+IndexManager loads indexes from disk / memcache whatever.
+Index this is a lucene class. or a simple wrapper if needed.
+Searcher this takes an index on construction and will "warm" it if needed.
+
+HMM.
+I could actually just have this in the search proxy. Instead of a SolrSearcher, have a MuceneSearcher.
+It implements queryable and can just query a raw lucene index with a fixed schema.
+Then...
+Have a clever queryable class, say DelegatingQueryable.
+It asks a QueryableManager for a queryable based on the SearchQuery.
+Then uses that to run the query.
+It could delegate based on the userid.
+Beautifully it could be pluggable within spring. So we could do A/B testing between two indexes.
+Something just has to derive from a DelegatingQueryable abstract class.
+
+eg.
+PersonalisedQueryable extends DelegatingQueryable
+ABTestQueryable extends DelegatingQueryable.
+
+eg:
+
+new ABTestQueryable(muceneQueryable, allsearchSolrQueryable)
+
+personalisedQueryable = mergeQueryable(mucene, allsearchSolr);
+
+===
+Thrift queryable interface;
+
+queryable.query(method, query);
+
+method could be searchArtist, searchTracks, searchAlbums, search?
+
+
+First steps... proper logging.
+Build some indexes for a bunch of users.
+Check for anecdotes that personalised search would make a difference.
+Get some stats for how much.
+Eventually I really just want to run some A/B tests. This means we need to get an idea of success from the weblogs.
+I think the easiest idea of success, would be: how many people clicked the "Top Result" link?
+Since people rarely use the subtabs. Also, it should bubble up to good results in the subtabs anyway right?
